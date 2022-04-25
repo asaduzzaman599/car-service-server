@@ -19,6 +19,12 @@ const run = async () => {
     try {
         client.connect()
         console.log("DB connected")
+        const collectonService = client.db("geniusCar").collection('service')
+        app.get("/service", async (req, res) => {
+            const cursor = collectonService.find({});
+            const result = await cursor.toArray();
+            res.send(result);
+        })
     } finally {
 
     }
