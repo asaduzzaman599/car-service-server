@@ -3,6 +3,7 @@ const express = require('express');
 const cors = require('cors');
 
 const { MongoClient, ServerApiVersion, ObjectId } = require('mongodb');
+var jwt = require('jsonwebtoken');
 
 const app = express();
 const port = process.env.PORT || 4000;
@@ -36,15 +37,29 @@ const run = async () => {
             res.send(result);
         })
 
+        app.post('/login', async (req, res) => {
+            const email = req.body
+            token = await jwt.sign(
+                email
+                , process.env.ACCESSTOKEN, { expiresIn: '1d' });
+            console.log(token)
+            // var token = jwt.sign({ foo: 'bar' }, 'shhhhh');
+
+            res.send(token)
+        })
+
         //order
         app.post("/order", async (req, res) => {
-            const body = req.body;
+            const body = req.body.email;
             const result = await collectonOrder.insertOne(body)
             res.send(result)
 
         })
         app.get("/order", async (req, res) => {
+            const accessToken = req.headers.accesstoken;
+            console.log("accessToken", accessToken)
             const queryEmail = req.query.email;
+            console.log(queryEmail)
             const query = {
                 email: queryEmail
             }
