@@ -12,6 +12,23 @@ const port = process.env.PORT || 4000;
 app.use(cors())
 app.use(express.json())
 
+const verifyJWToken = (req, res, nxt) => {
+    const headerAccessToken = req.headers.accesstoken;
+    if (!headerAccessToken) {
+        return res.status(401).send({ message: "unauthorized!" })
+    }
+    const token = headerAccessToken.split(' ')[1]
+
+    // verify a token symmetric
+    jwt.verify(token, process.env.ACCESSTOKEN, function (err, decoded) {
+        if (err) {
+            return res.status(403).send({ message: "Forbidden!" })
+        }
+        req.decoded = decoded
+        nxt()
+    });
+
+}
 //Mongodb
 const uri = `mongodb+srv://${process.env.DB_USER}:${process.env.DB_PASSWORD}@cluster0.sfale.mongodb.net/myFirstDatabase?retryWrites=true&w=majority`;
 const client = new MongoClient(uri, { useNewUrlParser: true, useUnifiedTopology: true, serverApi: ServerApiVersion.v1 });
@@ -55,18 +72,23 @@ const run = async () => {
             res.send(result)
 
         })
-        app.get("/order", async (req, res) => {
-            const accessToken = req.headers.accesstoken;
-            console.log("accessToken", accessToken)
-            const queryEmail = req.query.email;
-            console.log(queryEmail)
-            const query = {
-                email: queryEmail
-            }
-            const cursor = collectonOrder.find(query)
-            const result = await cursor.toArray();
+        app.get("/order", verifyJWToken, async (req, res) => {
 
-            res.send(result)
+            const queryEmail = req.query.email;
+            const decodeEmail = req.decoded.email
+            if (queryEmail === decodeEmail) {
+                const query = {
+                    email: queryEmail
+                }
+                const cursor = collectonOrder.find(query)
+                const result = await cursor.toArray();
+
+                res.send(result)
+            } else {
+
+                res.status(403).send({ message: 'Forbidden!' })
+            }
+
 
         })
     } finally {
